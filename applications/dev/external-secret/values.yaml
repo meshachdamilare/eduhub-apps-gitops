@@ -1,0 +1,11 @@
+serviceAccount:
+  create: true
+  name: external-secrets-sa
+
+controller:
+  resources: {}
+
+metrics:
+  enabled: true
+
+
