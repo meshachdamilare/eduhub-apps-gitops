@@ -1,9 +1,0 @@
-serviceAccount:
-  create: true
-  name: external-secrets-sa-dev
-
-metrics:
-  enabled: true
-
-controller:
-  resources: {}
