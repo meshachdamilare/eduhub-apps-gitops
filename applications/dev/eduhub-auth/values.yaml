@@ -1,3 +1,5 @@
+
+
 nameOverride: eduhub-auth
 namespaceOverride: eduhub-auth-dev
 
@@ -14,8 +16,8 @@ container:
   containerPort: 4000
 
   envFrom:
-    configMap: true
-    secret: true
+    configMap: true   
+    secret: true      
 
   probes:
     readiness:
