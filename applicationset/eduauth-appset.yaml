@@ -1,49 +1,49 @@
-# apiVersion: argoproj.io/v1alpha1
-# kind: ApplicationSet
-# metadata:
-#   name: eduhub-auth
-#   namespace: argocd
-# spec:
-#   goTemplate: true
-#   generators:
-#     - list:
-#         elements:
-#           - env: dev
-#             namespace: eduhub-auth-dev
-#             clusterServer: https://kubernetes.default.svc
-#             valuesPath: applications/dev/eduhub-auth/values.yaml
-#             manifestsPath: applications/dev/eduhub-auth
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: eduhub-auth
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: eduhub-auth-dev
+            clusterServer: https://kubernetes.default.svc
+            valuesPath: applications/dev/eduhub-auth/values.yaml
+            manifestsPath: applications/dev/eduhub-auth
 
-#   template:
-#     metadata:
-#       name: eduhub-auth-{{ .env }}
-#     spec:
-#       project: default
-#       sources:
-#         # Source 1: Helm (OCI-enabled) repo in ACR
-#         - repoURL: aksacrusw7.azurecr.io/helm
-#           chart: eduhub-auth
-#           targetRevision: "0.1.0"
-#           helm:
-#             valueFiles:
-#               - $values/{{ .valuesPath }}
+  template:
+    metadata:
+      name: eduhub-auth-{{ .env }}
+    spec:
+      project: default
+      sources:
+        # Source 1: Helm (OCI-enabled) repo in ACR
+        - repoURL: aksacrusw7.azurecr.io/helm
+          chart: eduhub-auth
+          targetRevision: "0.1.0"
+          helm:
+            valueFiles:
+              - $values/{{ .valuesPath }}
 
-#         # Source 2: Git repo with values.yaml + externalsecret.yaml
-#         - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
-#           targetRevision: main
-#           ref: values
-#           path: '{{ .manifestsPath }}'
+        # Source 2: Git repo with values.yaml + externalsecret.yaml
+        - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
+          targetRevision: main
+          ref: values
+          path: '{{ .manifestsPath }}'
 
-#       destination:
-#         server: '{{ .clusterServer }}'
-#         namespace: '{{ .namespace }}'
+      destination:
+        server: '{{ .clusterServer }}'
+        namespace: '{{ .namespace }}'
 
-#       syncPolicy:
-#         automated:
-#           prune: true
-#           selfHeal: true
-#         syncOptions:
-#           - CreateNamespace=true
-#           - ApplyOutOfSyncOnly=true
-#           - PrunePropagationPolicy=foreground
-#           - PruneLast=true
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
