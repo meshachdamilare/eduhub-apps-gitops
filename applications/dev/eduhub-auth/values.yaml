@@ -7,6 +7,7 @@ microservice:
     repository: "aksacrusw7.azurecr.io/eduhub-auth-service"
     tag: "develop-6c01a23"
     pullPolicy: IfNotPresent
+    pullSecrets: []
 
   replicaCount: 2
 
