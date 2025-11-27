@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: eduhub-auth
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+          # DEV cluster
+          - env: dev
+            namespace: eduhub-auth-dev
+            clusterServer: https://kubernetes.default.svc   
+            valuesPath: applications/dev/eduhub-auth/values.yaml
+
+          # PROD cluster
+          # - env: prod
+          #   namespace: eduhub-auth-prod
+          #   clusterServer: https://PROD_CLUSTER_API_SERVER   
+          #   valuesPath: applications/prod/eduhub-auth/values.yaml
+
+  template:
+    metadata:
+      name: eduhub-auth-{{ .env }}
+    spec:
+      project: default
+      sources:
+        # Source 1: OCI Helm chart from ACR
+        - repoURL: oci://aksacrusw7.azurecr.io/helm/eduhub-auth
+          chart: eduhub-auth
+          targetRevision: "0.1.0"
+          helm:
+            valueFiles:
+              - $values/{{ .valuesPath }}
+
+        # Source 2: Git repo with values.yaml + externalsecret.yaml
+        - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
+          targetRevision: main
+          ref: values
+
+      destination:
+        server: '{{ .clusterServer }}'   
+        namespace: '{{ .namespace }}'
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
