@@ -1,80 +1,81 @@
 
 
-nameOverride: eduhub-auth
-namespaceOverride: eduhub-auth-dev
+microservice:
+  nameOverride: eduhub-auth
+  namespaceOverride: eduhub-auth-dev
 
-image:
-  repository: "aksacrusw7.azurecr.io/eduhub-auth-service"
-  tag: "develop-6c01a23"
-  pullPolicy: IfNotPresent
-  pullSecrets: []
+  image:
+    repository: "aksacrusw7.azurecr.io/eduhub-auth-service"
+    tag: "develop-6c01a23"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
 
-replicaCount: 2
+  replicaCount: 2
 
-container:
-  name: auth
-  containerPort: 4000
+  container:
+    name: auth
+    containerPort: 4000
 
-  envFrom:
-    configMap: true   
-    secret: true      
+    envFrom:
+      configMap: true   
+      secret: true      
 
-  probes:
-    readiness:
-      enabled: true
-      path: /healthz
-      initialDelaySeconds: 10
-      periodSeconds: 10
-      timeoutSeconds: 3
-      failureThreshold: 3
-    liveness:
-      enabled: true
-      path: /healthz
-      initialDelaySeconds: 30
-      periodSeconds: 15
-      timeoutSeconds: 3
-      failureThreshold: 3
-    startup:
-      enabled: false
-      path: /healthz
-      initialDelaySeconds: 0
-      periodSeconds: 10
-      failureThreshold: 30
-      timeoutSeconds: 3
+    probes:
+      readiness:
+        enabled: true
+        path: /healthz
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+      liveness:
+        enabled: true
+        path: /healthz
+        initialDelaySeconds: 30
+        periodSeconds: 15
+        timeoutSeconds: 3
+        failureThreshold: 3
+      startup:
+        enabled: false
+        path: /healthz
+        initialDelaySeconds: 0
+        periodSeconds: 10
+        failureThreshold: 30
+        timeoutSeconds: 3
 
-autoscaling:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 8
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
 
-config:
-  enabled: true
-  data:
-    PORT: "4000"
-    NODE_ENV: "development"
-    APP_URL: "https://eduauth.meshachdevops.online"
-    POSTGRES_HOST: "meshach-pg-dev.postgres.database.azure.com"
-    POSTGRES_PORT: "5432"
-    POSTGRES_DB: edhub_auth_db
-    POSTGRES_USER: pgadmin
-    PGSSLMODE: "require"
-    JWT_ACCESS_TOKEN_EXPIRES_IN: "15m"
-    JWT_REFRESH_TOKEN_EXPIRES_IN: "7d"
-    RESET_TOKEN_EXPIRES_IN_MINUTES: "30"
-    EMAIL_FROM: "EduHub Academy <no-reply@eduhub.academy>"
-    SMTP_HOST: "smtp.ethereal.email"
-    SMTP_PORT: "587"
-    SSO_ALLOWED_PROVIDERS: "google,azuread"
+  config:
+    enabled: true
+    data:
+      PORT: "4000"
+      NODE_ENV: "development"
+      APP_URL: "https://eduauth.meshachdevops.online"
+      POSTGRES_HOST: "meshach-pg-dev.postgres.database.azure.com"
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: edhub_auth_db
+      POSTGRES_USER: pgadmin
+      PGSSLMODE: "require"
+      JWT_ACCESS_TOKEN_EXPIRES_IN: "15m"
+      JWT_REFRESH_TOKEN_EXPIRES_IN: "7d"
+      RESET_TOKEN_EXPIRES_IN_MINUTES: "30"
+      EMAIL_FROM: "EduHub Academy <no-reply@eduhub.academy>"
+      SMTP_HOST: "smtp.ethereal.email"
+      SMTP_PORT: "587"
+      SSO_ALLOWED_PROVIDERS: "google,azuread"
 
-secret:
-  enabled: false
-  existingSecret: eduhub-auth-secrets
+  secret:
+    enabled: false
+    existingSecret: eduhub-auth-secrets
 
-ingress:
-  enabled: true
-  hosts:
-    - host: "eduauth.meshachdevops.online"
-      path: "/"
-  tls:
-    - secretName: "eduauth-meshachdevops-online-tls"
-      hosts: ["eduauth.meshachdevops.online"]
+  ingress:
+    enabled: true
+    hosts:
+      - host: "eduauth.meshachdevops.online"
+        path: "/"
+    tls:
+      - secretName: "eduauth-meshachdevops-online-tls"
+        hosts: ["eduauth.meshachdevops.online"]
