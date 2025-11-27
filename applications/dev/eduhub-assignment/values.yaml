@@ -1,0 +1,82 @@
+
+microservice:
+  nameOverride: eduhub-assignment
+  namespaceOverride: eduhub-assignment-dev
+
+  image:
+    repository: "aksacrusw7.azurecr.io/eduhub-assignment-service"
+    tag: "develop-3fd8129"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+
+  replicaCount: 2
+
+  container:
+
+    name: assignment
+    containerPort: 3000
+
+    envFrom:
+      configMap: true   
+      secret: true   
+
+    probes:
+      readiness: 
+        enabled: true
+        path: /health
+        initialDelaySeconds: 10 
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 6 
+
+      liveness:  
+        enabled: true
+        path: /health
+        initialDelaySeconds: 30
+        periodSeconds: 15
+        timeoutSeconds: 3
+        failureThreshold: 4 
+
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+
+  podDisruptionBudget: 
+    enabled: true 
+    minAvailable: 1
+
+  config:
+    enabled: true
+    data:
+      NODE_ENV: development 
+      PORT: "3000" 
+      MAX_FILE_SIZE: "10485760" 
+      ALLOWED_FILE_TYPES: pdf,doc,docx,txt,jpg,png 
+      DB_DIALECT: postgres 
+      DB_HOST: meshach-pg-dev.postgres.database.azure.com 
+      DB_PORT: "5432" 
+      DB_NAME: assignment_service_db 
+      DB_USER: pgadmin 
+      PGSSLMODE: require 
+      REDIS_HOST: meshach-redis-dev.redis.cache.windows.net 
+      REDIS_PORT: "6380" 
+      REDIS_DB: "0" 
+      REDIS_TTL: "3600" 
+      AUTH_SERVICE_URL: http://eduhub-auth-service.eduhub-auth.svc.cluster.local:4000 
+      NOTIFICATION_SERVICE_URL: http://eduhub-notification-service.eduhub-notification.svc.cluster.local:3000 
+      AWS_REGION: us-east-1 
+      AWS_BUCKET_NAME: eduhub-assignments
+
+  secret:
+    enabled: false
+    existingSecret: eduhub-assignment-secrets
+
+  ingress:
+    enabled: true
+    hosts:
+      - host: eduassignment.meshachdevops.online
+        path: /
+    tls:
+      - secretName: eduassignment-meshachdevops-online-tls
+        hosts: [eduassignment.meshachdevops.online]
