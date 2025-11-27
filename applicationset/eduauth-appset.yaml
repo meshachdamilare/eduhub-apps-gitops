@@ -12,6 +12,7 @@ spec:
             namespace: eduhub-auth-dev
             clusterServer: https://kubernetes.default.svc
             valuesPath: applications/dev/eduhub-auth/values.yaml
+            manifestsPath: applications/dev/eduhub-auth
 
   template:
     metadata:
@@ -31,6 +32,7 @@ spec:
         - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
           targetRevision: main
           ref: values
+          path: '{{ .manifestsPath }}'
 
       destination:
         server: '{{ .clusterServer }}'
