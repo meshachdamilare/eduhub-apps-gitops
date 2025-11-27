@@ -8,17 +8,10 @@ spec:
   generators:
     - list:
         elements:
-          # DEV cluster
           - env: dev
             namespace: eduhub-auth-dev
-            clusterServer: https://kubernetes.default.svc   
+            clusterServer: https://kubernetes.default.svc
             valuesPath: applications/dev/eduhub-auth/values.yaml
-
-          # PROD cluster
-          # - env: prod
-          #   namespace: eduhub-auth-prod
-          #   clusterServer: https://PROD_CLUSTER_API_SERVER   
-          #   valuesPath: applications/prod/eduhub-auth/values.yaml
 
   template:
     metadata:
@@ -26,8 +19,8 @@ spec:
     spec:
       project: default
       sources:
-        # Source 1: OCI Helm chart from ACR
-        - repoURL: oci://aksacrusw7.azurecr.io/helm/eduhub-auth
+        # Source 1: Helm (OCI-enabled) repo in ACR
+        - repoURL: aksacrusw7.azurecr.io/helm
           chart: eduhub-auth
           targetRevision: "0.1.0"
           helm:
@@ -40,7 +33,7 @@ spec:
           ref: values
 
       destination:
-        server: '{{ .clusterServer }}'   
+        server: '{{ .clusterServer }}'
         namespace: '{{ .namespace }}'
 
       syncPolicy:
