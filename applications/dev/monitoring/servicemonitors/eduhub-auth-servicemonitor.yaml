@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: eduhub-auth
+  namespace: monitoring-dev
+  labels:
+    release: kube-prometheus-stack-dev
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: eduhub-auth
+  namespaceSelector:
+    matchNames:
+      - eduhub-auth-dev
+  endpoints:
+    - port: http          
+      path: /metrics
+      interval: 15s
+      scheme: http

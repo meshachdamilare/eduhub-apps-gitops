@@ -12,12 +12,14 @@ spec:
             clusterServer: https://kubernetes.default.svc
             namespace: monitoring-dev
             valuesPath: applications/dev/monitoring/kube-prometheus-stack-values.yaml
+            manifestsPath: applications/dev/monitoring
 
           # Add prod later if you want
           # - name: prod
           #   clusterServer: https://PROD_CLUSTER_API_SERVER
           #   namespace: monitoring-prod
           #   valuesPath: applications/prod/monitoring/kube-prometheus-stack-values.yaml
+          #   manifestsPath: applications/dev/monitoring
 
   template:
     metadata:
@@ -40,7 +42,7 @@ spec:
         - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
           targetRevision: main
           ref: values                      
-          path: .                          
+          path: '{{ .manifestsPath }}'          
 
       syncPolicy:
         automated:
