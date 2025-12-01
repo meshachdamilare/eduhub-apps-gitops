@@ -36,6 +36,11 @@ spec:
           helm:
             valueFiles:
               - $values/{{ .valuesPath }}
+
+        - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
+          targetRevision: main
+          ref: values                      
+          path: .     
               
       syncPolicy:
         automated:
