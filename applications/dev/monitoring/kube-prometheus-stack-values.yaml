@@ -11,15 +11,6 @@ grafana:
   ingress:
     enabled: false  
 
-  additionalDataSources:
-    - name: Loki
-      type: loki
-      access: proxy        # this is "Server" mode
-      url: http://loki-stack-dev.logging-dev:3100
-      isDefault: false
-      jsonData:
-        maxLines: 1000
-
 prometheus:
   service:
     type: ClusterIP
