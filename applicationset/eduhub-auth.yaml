@@ -24,7 +24,6 @@ spec:
         - repoURL: aksacrusw7.azurecr.io/helm
           chart: eduhub-auth
           targetRevision: "0.1.0"
-          path: .
           helm:
             valueFiles:
               - $values/{{ .valuesPath }}
