@@ -3,6 +3,7 @@
 loki:
   enabled: true
   isDefault: true
+  auth_enabled: false
 
   service:
     type: ClusterIP
