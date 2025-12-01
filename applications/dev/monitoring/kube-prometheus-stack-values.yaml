@@ -1,7 +1,4 @@
 
-crds:
-  enabled: false
-
 
 grafana:
   enabled: true
