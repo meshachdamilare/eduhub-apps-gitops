@@ -1,0 +1,24 @@
+
+
+loki:
+  enabled: true
+  isDefault: true
+
+  service:
+    type: ClusterIP
+
+  persistence:
+    enabled: false  # for testing
+
+promtail:
+  enabled: true
+  service:
+    type: ClusterIP
+
+
+
+grafana:
+  enabled: false   # already have Grafana from kube-prometheus-stack
+
+prometheus:
+  enabled: false   # already have Prometheus

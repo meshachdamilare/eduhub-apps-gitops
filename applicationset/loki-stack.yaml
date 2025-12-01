@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: external-secrets-operator
+  name: loki-stack
   namespace: argocd
 spec:
   goTemplate: true
@@ -10,39 +10,33 @@ spec:
         elements:
           - name: dev
             clusterServer: https://kubernetes.default.svc
-            namespace: external-secrets-dev
-            valuesPath: applications/dev/external-secrets/values.yaml
-            manifestsPath: applications/dev/external-secrets
+            namespace: logging-dev
+            valuesPath: applications/dev/logging/loki-stack-values.yaml
 
           # Uncomment and adapt when you add prod
           # - name: prod
           #   clusterServer: https://PROD_CLUSTER_API_SERVER
-          #   namespace: external-secrets-prod
-          #   valuesPath: applications/prod/external-secrets/values.yaml
-          #   manifestsPath: applications/prod/external-secrets
+          #   namespace: logging-dev
+          #   valuesPath: applications/prod/logging/loki-stack-values.yaml
 
   template:
     metadata:
-      name: external-secrets-operator-{{ .name }}
+      name: loki-stack-{{ .name }}
     spec:
       project: default
+
       destination:
         server: '{{ .clusterServer }}'
         namespace: '{{ .namespace }}'
+
       sources:
-      
-        - repoURL: https://charts.external-secrets.io/
-          chart: external-secrets
-          targetRevision: "1.1.0"
+        - repoURL: https://grafana.github.io/helm-charts
+          chart: loki-stack
+          targetRevision: "2.10.2" 
           helm:
             valueFiles:
               - $values/{{ .valuesPath }}
-
-        - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
-          targetRevision: main
-          ref: values
-          path: '{{ .manifestsPath }}'
-
+              
       syncPolicy:
         automated:
           prune: true
@@ -52,3 +46,4 @@ spec:
           - ApplyOutOfSyncOnly=true
           - PrunePropagationPolicy=foreground
           - PruneLast=true
+          - ServerSideApply=true

@@ -37,10 +37,6 @@ spec:
             valueFiles:
               - $values/{{ .valuesPath }}
 
-        - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
-          targetRevision: main
-          ref: values
-
       syncPolicy:
         automated:
           prune: true

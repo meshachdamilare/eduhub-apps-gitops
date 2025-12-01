@@ -20,7 +20,6 @@ spec:
     spec:
       project: default
       sources:
-        # Source 1: Helm (OCI-enabled) repo in ACR
         - repoURL: aksacrusw7.azurecr.io/helm
           chart: eduhub-assignment
           targetRevision: "0.1.0"
@@ -28,7 +27,6 @@ spec:
             valueFiles:
               - $values/{{ .valuesPath }}
 
-        # Source 2: Git repo with values.yaml + externalsecret.yaml
         - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
           targetRevision: main
           ref: values
