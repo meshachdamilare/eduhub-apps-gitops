@@ -1,0 +1,21 @@
+
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: admin123  
+
+  service:
+    type: ClusterIP
+
+  ingress:
+    enabled: false  
+prometheus:
+  service:
+    type: ClusterIP
+
+
+prometheusOperator:
+  admissionWebhooks:
+    enabled: true
+
+
