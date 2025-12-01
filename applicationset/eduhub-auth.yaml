@@ -21,7 +21,7 @@ spec:
       project: default
       sources:
         # Source 1: Helm (OCI-enabled) repo in ACR
-        - repoURL: oci://aksacrusw7.azurecr.io/helm
+        - repoURL: aksacrusw7.azurecr.io/helm
           chart: eduhub-auth
           targetRevision: "0.1.0"
           path: .
