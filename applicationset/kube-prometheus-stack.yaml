@@ -12,7 +12,7 @@ spec:
             clusterServer: https://kubernetes.default.svc
             namespace: monitoring-dev
             valuesPath: applications/dev/monitoring/kube-prometheus-stack-values.yaml
-            manifestsPath: applications/dev/monitoring/servicemonitors
+            manifestsPath: applications/dev/monitoring/*.yaml 
 
           # Add prod later if you want
           # - name: prod
