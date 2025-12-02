@@ -1,285 +1,279 @@
-# EduHub Apps GitOps Repository
+# **EduHub GitOps Repository**
 
-This repository contains the **GitOps configuration** for deploying all EduHub microservices to Kubernetes using **Argo CD**, **OCI-based Helm charts**, and **External Secrets Operator (ESO)**.
-
-It acts as the **single source of truth** for how every EduHub service is deployed in each environment (**DEV** and **PROD**).
-
-The repository stores:
-
-- Environment-specific Helm `values.yaml`
-- `ExternalSecret` manifests (Azure Key Vault → Kubernetes Secrets)
-- `ClusterSecretStore` configuration
-- Argo CD `ApplicationSet` definitions
-- Argo CD ACR pull credentials
-- Per-service GitOps deployment logic
-
-All deployments are fully automated and reconciled continuously by Argo CD.
+This repository contains the full GitOps configuration for deploying EduHub microservices and platform bootstrap components to Kubernetes using **Argo CD**, **ApplicationSets**, **Helm**, and **Kubernetes manifests**.
 
 
-### Repository Structure
+#### Repository Structure
 
-```text
-.
+```
 ├── applications
 │   ├── dev
-│   │   ├── argocd-secrets/
-│   │   │   └── argocd-pull-secret.yaml
-│   │   ├── eduhub-assignment/
+│   │   ├── eduhub-auth
 │   │   │   ├── external-secret.yaml
 │   │   │   └── values.yaml
-│   │   ├── eduhub-auth/
-│   │   │   ├── external-secret.yaml
-│   │   │   └── values.yaml
-│   │   ├── eduhub-catalog/
-│   │   │   ├── external-secret.yaml
-│   │   │   └── values.yaml
-│   │   └── external-secrets/
-│   │       ├── ClusterSecretStore.yaml
-│   │       └── values.yaml
+│   │   ├── eduhub-assignment
+│   │   ├── eduhub-catalog
+│   │   ├── logging
+│   │   │   └── loki-stack-values.yaml
+│   │   ├── monitoring
+│   │   │   ├── kube-prometheus-stack-values.yaml
+│   │   │   └── servicemonitors
+│   │   │       └── eduhub-auth-servicemonitor.yaml
+│   │   ├── external-secrets
+│   │   ├── argocd-secrets
 │   └── prod
-│       └── ... (same layout as dev)
-│
 ├── applicationset
-│   ├── argocd-secrets.yaml
-│   ├── eduhub-assignment.yaml
 │   ├── eduhub-auth.yaml
 │   ├── eduhub-catalog.yaml
-│   └── external-secrets.yaml
-│
-└── README.md
+│   ├── eduhub-assignment.yaml
+│   ├── kube-prometheus-stack.yaml
+│   ├── loki-stack.yaml
+│   ├── external-secrets.yaml
+│   └── argocd-secrets.yaml
+└── appofapps.yaml
 ```
 
 
-### End-to-End Flow
 
-High-level flow:
+The deployment workflow follows the **App-of-Apps pattern**:
 
-```text
-appofapps.yaml (single Argo CD Application)
-        ⇩
-ApplicationSets (in this repo under /applicationset)
-        ⇩
-Argo CD Applications (one per service/env)
-        ⇩
-Helm charts from ACR + values + ExternalSecrets
-        ⇩
-Running workloads in Kubernetes
+```
+Layer 1 → Root Application (appofapps.yaml)
+Layer 2 → ApplicationSets (per microservice or platform component)
+Layer 3 → Applications (Helm releases + manifests)
 ```
 
-More detailed:
+#### Flow Summary
 
-1. **`appofapps.yaml`** (App of Apps) points Argo CD to this Git repo and the `applicationset/` folder.
-2. Argo CD syncs the `ApplicationSet` manifests in `applicationset/`.
-3. Each `ApplicationSet` generates one or more **Argo CD Applications** (e.g., `eduhub-auth-dev`).
-4. Each Application:
-   - Pulls the correct **Helm chart** from ACR (OCI)
-   - Applies **values.yaml** from `applications/<env>/<service>/values.yaml`
-   - Applies **ExternalSecret** manifests for secrets
-5. External Secrets Operator pulls the real secrets from **Azure Key Vault**.
-6. Kubernetes deploys and reconciles services continuously.
+- You apply **one file** → `appofapps.yaml`  
+- Argo CD scans the `applicationset/` directory  
+- ApplicationSets generate the final Applications  
+- Applications deploy Helm charts + manifests  
+- Kubernetes and Git remain continuously in sync  
 
+---
 
-To bootstrap everything, you use a single **App of Apps** Argo CD Application. (App of Apps Parttern, One-Time Apply)
+### Folder Breakdown
 
-Example `appofapps.yaml`:
+| Folder | Purpose |
+|--------|---------|
+| `appofapps.yaml` | Root App that bootstraps the whole GitOps workflow. Applied **once**. |
+| `applicationset/` | ApplicationSets that generate Apps for each microservice or platform component. |
+| `applications/dev/` | Dev environment Helm values and manifests. |
+| `applications/prod/` | Production environment Helm values and manifests. |
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: base-application
-  namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
-    targetRevision: main
-    path: applicationset
-    directory:
-      recurse: true
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: argocd
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-```
+---
 
-Once Argo CD is installed in the cluster and the `argocd` namespace exists, apply:
+#### Bootstrap Argo CD (One-Time)
+
+Apply the root App-of-Apps:
 
 ```bash
 kubectl apply -f appofapps.yaml -n argocd
 ```
 
-Note: this is applied once during creation.
+It ca also be triggered in a pipeline
 
-After this:
+This file:
 
-- Argo CD will **continuously watch** the `applicationset/` folder in this repo.
-- Any change to ApplicationSets, Applications, values, or ExternalSecrets will be reconciled automatically.
-- You **do not** need to re-apply `appofapps.yaml` unless you change the approach of deployment
+- Loads all ApplicationSets
+- Creates all Applications
+- Deploys every component automatically
 
----
-
-#### Secret Management (External Secrets Operator)
-
-Each service directory contains:
-
-```text
-applications/dev/<service>/external-secret.yaml
-```
-
-This YAML instructs ESO to:
-
-- Read one or more keys from Azure Key Vault  
-- Create/update a Kubernetes Secret automatically  
-- Refresh secrets on a schedule  
-- Keep secrets out of Git forever  
-
-Examples of synced secrets:
-
-- `POSTGRES_PASSWORD`  
-- `DATABASE_URL`  
-- `JWT_ACCESS_TOKEN_SECRET`  
-- `SMTP_PASSWORD`  
-- `REDIS_URL`  
-
-`applications/dev/external-secrets/ClusterSecretStore.yaml` configures how ESO connects to Azure Key Vault (tenant, vault URI, auth method, etc.).
+Git becomes the single source of truth.
 
 ---
 
-#### How Argo CD Pulls Private Helm Charts from ACR
+#### ApplicationSets
 
-Argo CD requires credentials to pull Helm charts from a **private ACR OCI registry**.
+Each file in `applicationset/` defines how a component is deployed, using:
 
-This is handled by:
+- Helm chart source (remote chart)
+- Git source (values + additional manifests)
+- Namespace destination
+- Sync policies
+- Auto-pruning and auto-healing
 
-```text
-applications/dev/argocd-secrets/argocd-pull-secret.yaml
+Flow:
+
+```
+ApplicationSet → creates Application → deploys service
 ```
 
-This file is an `ExternalSecret` that:
-
-- Fetches `username` and `password` (or token) from Azure Key Vault  
-- Creates a Secret inside the `argocd` namespace  
-- Labels it with: ```argocd.argoproj.io/secret-type: repository ```
-
-This tells Argo CD:
-
-> “Use this secret to authenticate to the ACR Helm OCI registry.”
-
-Once created, Argo CD can access:
-
-```text
-oci://aksacrusw7.azurecr.io/helm
-```
-
-Without this, Argo CD fails with errors like:
-
-```text
-401 unauthorized
-failed to resolve revision
-authentication required
-```
-
-This pattern keeps ACR credentials **out of Git** and **managed via Key Vault + ESO**.
+ApplicationSets support multiple environments through generators (e.g., `list`, `matrix`).
 
 ---
 
-#### ApplicationSet Logic
+#### The applications/ Directory
 
-Each service has an `ApplicationSet` definition under `applicationset/`, for example:
+This directory contains all configuration for each **environment** (`dev`, `prod`).
 
-```text
-applicationset/eduhub-auth.yaml
+Example service:
+
+```
+applications/dev/eduhub-auth/
+│── values.yaml
+│── external-secret.yaml
 ```
 
-The ApplicationSet:
+Monitoring Example
 
-- Points to the Helm chart in ACR:
-
-  ```yaml
-  repoURL: oci://aksacrusw7.azurecr.io/helm
-  chart: eduhub-auth
-  targetRevision: "0.1.0"
-  ```
-
-- Pulls values from this repo:
-
-  ```yaml
-  values:
-    path: applications/dev/eduhub-auth/values.yaml
-  ```
-
-- Applies the corresponding `external-secret.yaml` from:
-
-  ```text
-  applications/dev/eduhub-auth/external-secret.yaml
-  ```
-
-- Deploys to the configured cluster + namespace.
-- Enables:
-  - automated sync
-  - self-healing
-  - pruning
-  - namespace creation via `CreateNamespace=true`
-
-Similar `ApplicationSet` definitions exist for all the services and tools deployed into the cluster.
-
-
-The deployment supports multiple environments, currently `dev` and `prod`:
-
-```text
-applications/dev/
-applications/prod/
+```
+applications/dev/monitoring/
+│── kube-prometheus-stack-values.yaml
+│── servicemonitors/
+│     └── eduhub-auth-servicemonitor.yaml
 ```
 
-Each environment can override:
+Logging Example
 
-- image tags  
-- namespaces  
-- ingress domains  
-- autoscaling behavior  
-- secret names  
-- database endpoints  
-
-Argo CD keeps each environment reconciled independently based on the `ApplicationSet` config.
+```
+applications/dev/logging/loki-stack-values.yaml
+```
 
 ---
-### To deploy a new version of a microservice:
 
-**Update image tag or config**
+#### Helm + Manifests (How Argo CD Applies Them)
 
-Edit the appropriate values file, for example:
+There are **two patterns** depending on the folder content.
 
-```text
+
+##### A) When Git contains ONLY Helm values → `path: .`
+
+Example:
+
+```
 applications/dev/eduhub-auth/values.yaml
 ```
 
-Change:
+This folder contains **no Kubernetes manifests**, so:
 
 ```yaml
-image:
-  tag: "develop-abc123"
+path: .
 ```
 
-Or update env/config values as needed.
-
-**Commit & push**
-
-Once pushed to the Git remote:
-- Argo CD detects the Git change  
-- ApplicationSet regenerates/spec updates as needed  
-- Argo CD syncs the application  
-- Helm pulls the correct chart version from ACR  
-- Kubernetes rolls out the new version
+Works because Argo only uses the values file.
 
 ---
 
-### Work in Progress...
-- Deploy and set up monitoring tools like Prometheus and Grafana
-- Configure Single-Sign-on for Argocd using Okta... Same for prometheus and grafana
-- Deploy other bootstrapping tools like Goldilocks, SonarQube, etc
+##### B) When Git contains manifests → `path: '{{ .manifestsPath }}'`
+
+Example:
+
+```
+applications/dev/monitoring/servicemonitors/
+```
+
+The ApplicationSet sets:
+
+path: . vs path: '{{ .manifestsPath }}' in an Argo CD multi-source ApplicationSet.
+
+- Use path: . when the Git repo is ONLY providing Helm values
+```
+sources:
+  - repoURL: https://grafana.github.io/helm-charts
+    chart: loki-stack
+    targetRevision: "2.10.2"
+    helm:
+      valueFiles:
+        - $values/{{ .valuesPath }}
+
+  - repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
+    targetRevision: main
+    ref: values
+    path: .
+```
+
+In this case:
+
+- valuesPath might be applications/dev/logging/loki-stack-values.yaml
+
+- Argo CD doesn’t apply any YAML from Git as manifests
+
+- Git is only there to feed Helm values.yaml
+
+```
+sources:
+- repoURL: aksacrusw7.azurecr.io/helm
+    chart: eduhub-auth
+    targetRevision: "0.1.0"
+    helm:
+    valueFiles:
+        - $values/{{ .valuesPath }}   # e.g. applications/dev/eduhub-auth/values.yaml
+
+- repoURL: https://github.com/meshachdamilare/eduhub-apps-gitops.git
+    targetRevision: main
+    ref: values
+    path: '{{ .manifestsPath }}'      # e.g. applications/dev/eduhub-auth
+
+```
+In this case:
+- Helm reads overrides from valuesPath
+- Argo CD also applies all Kubernetes manifests under applications/dev/eduhub-auth (e.g. external-secret.yaml, future networkpolicy.yaml, etc.)
+
+
+---
+
+### Pulling Private Helm Charts from Azure ACR (OCI)
+
+Argo CD does **not** automatically authenticate to private OCI registries.  
+You must explicitly provide a repository credential.
+
+Create an Argo CD repository secret deployed in the argocd namespace:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: repo-acr-credential
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  url: "myregistry.azurecr.io/helm"
+  username: "<client-id or acr-username>"
+  password: "<client-secret or acr-password>"
+  enableOCI: "true"
+type: Opaque
+```
+
+Important Notes
+
+- `url:`in secret **must match** the URL used in `repoURL:` in ApplicationSet
+- Do **not** prefix with `oci://`  argocd handles that automatically.
+- Use External Secrets Operator for managing the secret securely  
+
+---
+
+#### Connecting Argo CD to GitHub via SSH
+
+1. Generate SSH key:
+
+```bash
+ssh-keygen -t rsa -b 4096 -C "argocd@meshachdevopsonline.com" -f ~/.ssh/argocd_github_key
+```
+
+2. Add the public key (`*.pub`) to GitHub  
+**Repo → Settings → Deploy Keys → Add Key**
+
+3. Add the repo to Argo CD:
+
+```bash
+argocd repo add git@github.com:meshachdamilare/eduhub-apps-gitops.git   --ssh-private-key-path ~/.ssh/argocd_github_key
+```
+
+---
+
+This repository implements a complete GitOps workflow:
+
+✔ One-time bootstrap (`appofapps.yaml`)  
+✔ ApplicationSets manage all services  
+✔ Helm + manifests deployed via multi-source  
+✔ Supports private ACR OCI registries  
+✔ GitHub SSH authentication  
+✔ Dev/prod separation  
+✔ Secure secret handling via External Secrets  
+✔ Fully extensible for new microservices  
+
+Git is the single source of truth.  
+Argo CD keeps Kubernetes in sync automatically, continuously, and reliably.
